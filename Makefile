@@ -1,4 +1,3 @@
-
 all: build
 
 build:
@@ -7,9 +6,8 @@ build:
 install:
 	@mv .build/release/overlook /usr/local/bin/
 
-
 clean:
-	@swift build --clean=dist
+	@swift package clean
 
 xcode:
 	@rm -rf overlook.xcodeproject
@@ -20,5 +18,4 @@ run: build
 
 release: clean
 	@swift build --configuration release
-	
 

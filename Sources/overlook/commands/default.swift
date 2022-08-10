@@ -10,66 +10,67 @@ import Foundation
 import PathKit
 import SwiftCLI
 import Rainbow
-import config
-import env
-import task
-import watch
+import Config
+import Env
+import Tasks
+import Watch
 
-public class DefaultCommand : Command {
-  public let name              = ""
-  public let signature         = "[<optional>] ..."
-  public let shortDescription  = ""
+public class DefaultCommand: Command {
 
-  private let taskManager = TaskManager()
-  private var env         = Env()
-  private var directories = [String]()
-  private var exec        = [String]()
-  private var ignore      = [String]()
+    public let name = ""
+    public let signature = "[<optional>] ..."
+    public let shortDescription = ""
 
-  public init() {}
+    private let taskManager = TaskManager()
+    private var env = Env()
+    private var directories = [String]()
+    private var exec = [String]()
+    private var ignore = [String]()
 
-  public func execute(arguments: CommandArguments) throws {
-    guard let settings = Config() else {
-      throw CLIError.error("Unable to locate .overlook file, please run `overlook init`")
+    public init() {
     }
 
-    directories = settings.directories.map { String(describing: Path($0).absolute()) }
-    ignore      = settings.ignore.map { String(describing: Path($0).absolute()) }
-    exec        = settings.execute.components(separatedBy: " ")
+    public func execute() throws {
+        guard let settings = Config() else {
+            throw CLI.Error(message: "Unable to locate .overlook file, please run `overlook init`")
+        }
 
-    taskManager.verbose = settings.verbose
+        directories = settings.directories.map {
+            String(describing: Path($0).absolute())
+        }
+        ignore = settings.ignore.map {
+            String(describing: Path($0).absolute())
+        }
+        exec = settings.execute.components(separatedBy: " ")
 
-    guard directories.count > 0, exec.count > 0 else {
-      throw CLIError.error("No `directories` or `execute` found in .overlook file. They are required. ")
+        taskManager.verbose = settings.verbose
+
+        guard directories.count > 0, exec.count > 0 else {
+            throw CLI.Error(message: "No `directories` or `execute` found in .overlook file. They are required. ")
+        }
+
+        startup(exec.joined(separator: " "), watching: directories)
+
+        taskManager.create(exec) { [weak self] (data) in
+            guard let `self` = self, let str = String(data: data, encoding: .utf8) else {
+                return
+            }
+
+            let output = str.trimmingCharacters(in: .whitespacesAndNewlines)
+
+            if self.taskManager.verbose && output.count > 0 {
+                print(output)
+            }
+        }
+
+        taskManager.start()
+
+        watch(directories, exclude: ignore) {
+            self.taskManager.restart()
+        }
     }
 
-    startup(exec.joined(separator: " "), watching: directories)
-
-    taskManager.create(exec) {[weak self] (data) in
-      guard let `self` = self, let str = String(data: data, encoding: .utf8) else {
-        return
-      }
-
-      let output = str.trimmingCharacters(in: .whitespacesAndNewlines)
-
-      if self.taskManager.verbose && output.characters.count > 0 {
-        print(output)
-      }
+    private func setupEnv(_ vars: [String: String]) {
+        for (k, v) in vars { env[k] = v }
     }
-
-    taskManager.start()
-    watch()
-  }
-
-  private func watch() {
-    Watch(directories, exclude:ignore) {
-      self.taskManager.restart()
-    }
-  }
-
-  private func setupEnv(_ vars:[String:String]) {
-    for(k,v) in vars {
-      env[k] = v
-    }
-  }
 }

@@ -1,20 +1,53 @@
+// swift-tools-version: 5.4
+
 import PackageDescription
 
 let package = Package(
     name: "overlook",
-    targets: [
-      Target(name: "overlook", dependencies: ["watch", "config", "task", "env",]),
-      Target(name: "watch"),
-      Target(name: "config", dependencies: ["json"]),
-      Target(name: "json"),
-      Target(name: "task", dependencies: ["signals"]),
-      Target(name: "env"),
-      Target(name: "signals"),
+    products: [
+        .executable(
+            name: "overlook",
+            targets: ["overlook", "Config", "Env", "Json", "Tasks", "Watch"]
+        ),
     ],
-
     dependencies: [
-        .Package(url: "https://github.com/kylef/PathKit",     majorVersion: 0, minor: 7),
-        .Package(url: "https://github.com/onevcat/Rainbow",   majorVersion: 2),
-        .Package(url: "https://github.com/jakeheis/SwiftCLI", majorVersion: 2),
+        .package(url: "https://github.com/kylef/PathKit", from: "1.0.1"),
+        .package(url: "https://github.com/onevcat/Rainbow", from: "4.0.1"),
+        .package(url: "https://github.com/jakeheis/SwiftCLI", from: "6.0.0"),
+    ],
+    targets: [
+        .executableTarget(
+            name: "overlook",
+            dependencies: [
+                .product(name: "PathKit", package: "PathKit"),
+                .product(name: "Rainbow", package: "Rainbow"),
+                .product(name: "SwiftCLI", package: "SwiftCLI"),
+                "Config",
+                "Env",
+                "Watch",
+                "Tasks",
+            ]
+        ),
+        .target(
+            name: "Config",
+            dependencies: [
+                .product(name: "PathKit", package: "PathKit"),
+                "Json"
+            ]
+        ),
+        .target(
+            name: "Tasks",
+            dependencies: [
+                .product(name: "PathKit", package: "PathKit"),
+            ]
+        ),
+        .target(
+            name: "Env",
+            dependencies: [
+                .product(name: "PathKit", package: "PathKit")
+            ]
+        ),
+        .target(name: "Watch"),
+        .target(name: "Json"),
     ]
 )

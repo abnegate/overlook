@@ -7,105 +7,73 @@
 //
 
 import Foundation
-import SwiftCLI
 import PathKit
 import Rainbow
-import config
-import env
+import SwiftCLI
+import Config
+import Env
 
 public class Overlook {
-  static let name           = "overlook"
-  static let version        = "0.1.4"
-  static let desc           = "File monitoring tool that excutes on change. Used anywhere."
 
-  static let dotTemplate:[String:Any] = [
-    "env"         : ["example" : "variable"],
-    "verbose"     : true,
-    "ignore"      : [".git", ".gitignore", ".overlook",],
-    "directories" : ["build", "tests",],
-    "execute"     : "ls -la",
-  ]
+    static let name = "overlook"
+    static let version = "0.2.0"
+    static let desc = "File monitoring tool that executes on change. Used anywhere."
 
-  private lazy var helpCommand:HelpCommand        = HelpCommand()
-  private lazy var versionCommand:VersionCommand  = VersionCommand()
-  private lazy var defaultCommand:DefaultCommand  = DefaultCommand()
-  private lazy var initCommand:InitCommand        = InitCommand()
-  private lazy var adhocCommand:AdhocCommand      = AdhocCommand()
-  private lazy var router:OverlookRouter          = OverlookRouter(self.defaultCommand)
-
-  private var runOnce:[Command] {
-    return [
-      helpCommand,
-      versionCommand,
-      initCommand,
+    static let dotTemplate: [String: Any] = [
+        "env": ["example": "variable"],
+        "verbose": true,
+        "ignore": [".git", ".gitignore", ".overlook",],
+        "directories": ["build", "tests",],
+        "execute": "ls -la",
     ]
-  }
 
-  public init() {
-    CLI.setup(name: Overlook.name, version: Overlook.version, description: Overlook.desc)
+    public func run() {
+        let cli = CLI(
+            name: Overlook.name,
+            version: Overlook.version,
+            description: Overlook.desc,
+            commands: [
+                InitCommand(),
+                DefaultCommand(),
+                WatchCommand()
+            ]
+        )
 
-    setupRouter()
-    setupCommands()
-    setupAliases()
-  }
+        cli.aliases["-h"] = "help"
+        cli.aliases["--help"] = "help"
 
-  private func setupRouter() {
-    CLI.router = self.router
-  }
+        cli.aliases["-v"] = "version"
+        cli.aliases["--version"] = "version"
 
-  private func setupCommands() {
-    CLI.versionCommand  = versionCommand
-    CLI.helpCommand     = helpCommand
+        cli.aliases["-i"] = "init"
+        cli.aliases["--init"] = "init"
 
-    CLI.register(command: initCommand)
-    CLI.register(command: adhocCommand)
-  }
+        cli.aliases["-w"] = "watch"
+        cli.aliases["--watch"] = "watch"
 
-  private func setupAliases() {
-    CLI.alias(from: "-h",     to: "help")
-    CLI.alias(from: "--help", to: "help")
+        let result = cli.go()
 
-    CLI.alias(from: "-v",         to: "version")
-    CLI.alias(from: "--version",  to: "version")
-
-
-    CLI.alias(from: "-i",     to: "init")
-    CLI.alias(from: "--init", to: "init")
-
-    CLI.alias(from: "-w",       to: "watch")
-    CLI.alias(from: "--watch",  to: "watch")
-  }
-
-  public func run() {
-    let result = CLI.go()
-
-    guard result == CLIResult.success else {
-      exit(result)
+        guard result == 0 else {
+            exit(result)
+        }
+//        guard runOnce.contains(where: { $0.name == router.current }) else {
+            dispatchMain()
+//        }
+        exit(result)
     }
-
-    guard self.router.exitImmediately == false else {
-      exit(result)
-    }
-
-    guard runOnce.contains(where: { $0 == self.router.current } ) else {
-      dispatchMain()
-    }
-
-    exit(result)
-  }
 }
 
-public func startup(_ run:String, watching:[String]) {
-  let executing = "executing: "
-  let target    = run.bold
+public func startup(_ run: String, watching: [String]) {
+    let executing = "executing: "
+    let target = run.bold
 
-  print("\nStarting Overlook...".green.bold)
-  print(executing + target.bold)
-  print("watching:")
+    print("\nStarting overlook...".green.bold)
+    print(executing + target.bold)
+    print("Watching:")
 
-  for directory in watching {
-    print("  ", directory.bold)
-  }
+    for directory in watching {
+        print("  ", directory.bold)
+    }
 }
 
 

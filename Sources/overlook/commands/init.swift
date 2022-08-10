@@ -11,15 +11,20 @@ import SwiftCLI
 import PathKit
 import Rainbow
 
-public class InitCommand : Command {
-  public let name              = "init"
-  public let signature         = ""
-  public let shortDescription  = "Creates a new .overlook file in the current directory."
+public class InitCommand: Command {
 
-  public func execute(arguments: CommandArguments) throws {
-    let data = try JSONSerialization.data(withJSONObject: Overlook.dotTemplate, options: .prettyPrinted)
-    let path = Path.current + Path(".overlook")
+    public let name = "init"
+    public let signature = ""
+    public let shortDescription = "Creates a new .overlook file in the current directory."
 
-    try path.write(data)
-  }
+    public func execute() throws {
+        let data = try JSONSerialization.data(
+            withJSONObject: Overlook.dotTemplate,
+            options: .prettyPrinted
+        )
+
+        let path = Path.current + Path(".overlook")
+
+        try path.write(data)
+    }
 }

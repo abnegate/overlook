@@ -10,68 +10,69 @@ import Foundation
 import SwiftCLI
 import PathKit
 import Rainbow
-import task
-import watch
+import Tasks
+import Watch
 
-public class AdhocCommand : OptionCommand {
-  public let name              = "watch"
-  public let signature         = ""
-  public let shortDescription  = "Watch files or directories and execute command"
+public class WatchCommand: Command {
 
-  private let taskManager       = TaskManager()
-  private var targets:[String]  = []
-  private var ignore:[String]   = []
-  private var exec:[String]     = []
+    public let name = "watch"
+    public let signature = ""
+    public let shortDescription = "Watch files or directories and execute command"
 
-  public func setupOptions(options: OptionRegistry) {
-    options.add(keys: ["-t", "--target",], usage: "Comma separated list of directory or files to monitor", valueSignature: "target") { value in
-      let targets = value.replacingOccurrences(of: ", ", with: ",").components(separatedBy: ",")
+    private let taskManager = TaskManager()
 
-      self.targets = targets.map {
-        String(describing: (Path($0).absolute()))
-      }
+    @Key("-t", "--target", description: "Comma separated list of directory or files to watch")
+    var targets: String?
+
+    @Key("-i", "--ignore", description: "Comma separated list of files or directories to ignore")
+    var ignore: String?
+
+    @Key("-e", "--execute", description: "Command to execute when targets are changed.")
+    var exec: String?
+
+    @Flag("-v", "--verbose", description: "Suppress output of running tasks.")
+    var verbose: Bool
+
+    public func execute() throws {
+        guard let targets = targets, let exec = exec else {
+            throw CLI.Error(message: "Arguments `target` and `execute` are required")
+        }
+
+        var targetArray = targets
+                .replacingOccurrences(of: ", ", with: ",")
+                .components(separatedBy: ",")
+
+        targetArray = targetArray.map {
+            String(describing: (Path($0).absolute()))
+        }
+
+        let ignoreArray = ignore?
+                .replacingOccurrences(of: ", ", with: ",")
+                .components(separatedBy: ",") ?? []
+
+        let execArray = exec.components(separatedBy: " ")
+
+        taskManager.verbose = verbose
+
+        startup(execArray.joined(separator: " "), watching: targetArray)
+
+        taskManager.create(execArray) { [weak self] (data) in
+            guard let `self` = self, let str = String(data: data, encoding: .utf8) else {
+                return
+            }
+
+            if self.taskManager.verbose {
+                let output = str.trimmingCharacters(in: .whitespacesAndNewlines)
+
+                print(output)
+            }
+        }
+
+        taskManager.start()
+
+        watch(targetArray, exclude: ignoreArray) {
+            self.taskManager.restart()
+        }
     }
-
-    options.add(keys: ["-e", "--execute",], usage: "What is executed when targets are changed", valueSignature: "execute") { value in
-      self.exec = value.components(separatedBy: " ")
-    }
-
-    options.add(keys: ["-i", "--ignore",], usage: "Comma separated list of files or directories to ignore", valueSignature: "ignore") { value in
-      self.ignore = value.replacingOccurrences(of: ", ", with: ",").components(separatedBy: ",")
-    }
-    options.add(keys: ["--verbose",], usage: "Ability to surpress output of the tasks running. (Just a quick \"Restarting\" message from Overlook", valueSignature: "verbose") { value in
-      self.taskManager.verbose = (value.lowercased() == "true")
-    }
-  }
-
-
-  public func execute(arguments: CommandArguments) throws {
-    guard targets.count > 0, exec.count > 0 else {
-      throw CLIError.error("Arguments `target` and `execute` is required")
-    }
-
-    startup(exec.joined(separator: " "), watching: targets)
-
-    taskManager.create(exec) {[weak self] (data) in
-      guard let `self` = self, let str = String(data: data, encoding: .utf8) else {
-        return
-      }
-
-      if self.taskManager.verbose {
-        let output = str.trimmingCharacters(in: .whitespacesAndNewlines)
-
-        print(output)
-      }
-    }
-
-    self.taskManager.start()
-    watch()
-  }
-
-  private func watch() {
-    Watch(targets, exclude:ignore) {
-      self.taskManager.restart()
-    }
-  }
 }
 

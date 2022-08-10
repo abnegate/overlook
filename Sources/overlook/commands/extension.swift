@@ -6,15 +6,16 @@
 //
 //
 
-import Foundation 
-import SwiftCLI 
-import config
+import Foundation
+import SwiftCLI
+import Config
 
-extension Equatable where Self : Command {}
+extension Equatable where Self: Command {
+}
 
-public func ==(lhs:Command, rhs:Command) -> Bool {
-  let left  = lhs.name.lowercased()
-  let right = rhs.name.lowercased()
-  
-  return left == right
+public func ==(lhs: Command, rhs: Command) -> Bool {
+    let left = lhs.name.lowercased()
+    let right = rhs.name.lowercased()
+
+    return left == right
 }
