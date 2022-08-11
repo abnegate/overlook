@@ -37,7 +37,7 @@ public struct Env {
     private func exec(_ arguments: [String]) -> String? {
         let pipe = Pipe()
         let process = Process()
-        process.launchPath = "/usr/bin/Env"
+        process.launchPath = "/usr/bin/env"
         process.arguments = arguments
         process.standardOutput = pipe
 
@@ -50,9 +50,9 @@ public struct Env {
     }
 }
 
-extension Env /* Get/Set */ {
+extension Env {
     public func get(_ key: String) -> String? {
-        return ProcessInfo.processInfo.environment[key]
+        ProcessInfo.processInfo.environment[key]
     }
 
     public func set(_ key: String, value: String) {
@@ -68,16 +68,16 @@ extension Env /* Get/Set */ {
     }
 }
 
-extension Env /* subscript */ {
+extension Env {
 
     public subscript(key: String) -> String? {
         get {
-            return self.get(key)
+            get(key)
         }
 
         set {
             guard let newValue = newValue else {
-                self.delete(key)
+                delete(key)
                 return
             }
 

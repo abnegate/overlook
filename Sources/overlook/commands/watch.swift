@@ -1,5 +1,5 @@
 //
-//  adhoc.swift
+//  watch.swift
 //  overlook
 //
 //  Created by Wesley Cope on 9/30/16.
@@ -56,14 +56,14 @@ public class WatchCommand: Command {
 
         startup(execArray.joined(separator: " "), watching: targetArray)
 
-        taskManager.create(execArray) { [weak self] (data) in
+        taskManager.create(execArray) { [weak self] data in
             guard let `self` = self, let str = String(data: data, encoding: .utf8) else {
                 return
             }
 
-            if self.taskManager.verbose {
-                let output = str.trimmingCharacters(in: .whitespacesAndNewlines)
+            let output = str.trimmingCharacters(in: .whitespacesAndNewlines)
 
+            if self.taskManager.verbose && output.count > 0 {
                 print(output)
             }
         }

@@ -14,7 +14,13 @@ fileprivate class FileWatch {
 
     fileprivate var excluding: [String] = []
 
-    fileprivate var context = FSEventStreamContext(version: 0, info: nil, retain: nil, release: nil, copyDescription: nil)
+    fileprivate var context = FSEventStreamContext(
+        version: 0,
+        info: nil,
+        retain: nil,
+        release: nil,
+        copyDescription: nil
+    )
 
     fileprivate let flags = UInt32(kFSEventStreamCreateFlagUseCFTypes | kFSEventStreamCreateFlagFileEvents)
 
@@ -36,20 +42,22 @@ fileprivate class FileWatch {
         }
 
         DispatchQueue.main.async {
-
             FileWatch.instance.stop()
             FileWatch.instance.handler()
-            FileWatch.instance.start(FileWatch.instance.paths, queue: FileWatch.instance.queue, callback: FileWatch.instance.handler)
+            FileWatch.instance.start(
+                FileWatch.instance.paths,
+                queue: FileWatch.instance.queue,
+                callback: FileWatch.instance.handler
+            )
         }
     }
 
-    fileprivate var handler: () -> () = {
-    }
+    fileprivate var handler: () -> () = {}
     fileprivate var stream: FSEventStreamRef?
 
     fileprivate var isRunning = false
     fileprivate var paths: [String] = []
-    fileprivate var queue: DispatchQueue = DispatchQueue.global()
+    fileprivate var queue = DispatchQueue.global()
 
     fileprivate func start(_ paths: [String], queue: DispatchQueue, callback: @escaping () -> ()) {
         guard isRunning == false else {
@@ -60,7 +68,16 @@ fileprivate class FileWatch {
         self.queue = queue
 
         handler = callback
-        stream = FSEventStreamCreate(kCFAllocatorDefault, FileWatch.instance.callback, &context, (paths as CFArray), FSEventStreamEventId(kFSEventStreamEventIdSinceNow), 0, flags)
+
+        stream = FSEventStreamCreate(
+            kCFAllocatorDefault,
+            FileWatch.instance.callback,
+            &context,
+            (paths as CFArray),
+            FSEventStreamEventId(kFSEventStreamEventIdSinceNow),
+            0,
+            flags
+        )
 
         if let stream = stream {
             FSEventStreamSetDispatchQueue(stream, queue)
@@ -91,7 +108,12 @@ fileprivate class FileWatch {
     }
 }
 
-public func watch(_ paths: [String], exclude: [String] = [], queue: DispatchQueue = DispatchQueue.global(), callback: @escaping (() -> ())) {
+public func watch(
+    _ paths: [String],
+    exclude: [String] = [],
+    queue: DispatchQueue = DispatchQueue.global(),
+    callback: @escaping () -> ()
+) {
     FileWatch.instance.excluding = exclude
     FileWatch.instance.start(paths, queue: queue, callback: callback)
 }

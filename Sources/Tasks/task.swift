@@ -10,6 +10,7 @@ import Foundation
 import PathKit
 
 public typealias TaskHandler = (Data) -> Void
+
 internal let MAX_BUFFER = 4096
 
 public class Task: Equatable, NSCopying {
@@ -35,13 +36,15 @@ public class Task: Equatable, NSCopying {
     public let path: String
     public let arguments: [String]
     public lazy var process: Process = {
-        $0.launchPath = self.path
-        $0.arguments = self.arguments
-        $0.standardOutput = self.output
-        $0.terminationHandler = self.terminationHandler
+        let proc = Process()
 
-        return $0
-    }(Process())
+        proc.launchPath = self.path
+        proc.arguments = self.arguments
+        proc.standardOutput = self.output
+        proc.terminationHandler = self.terminationHandler
+
+        return proc
+    }()
 
     private(set) var output: Pipe? = Pipe()
     private let maxBuffer = MAX_BUFFER
@@ -52,8 +55,10 @@ public class Task: Equatable, NSCopying {
                 return
             }
 
+            let data = handle.availableData
+
             DispatchQueue.main.async {
-                self.callback(handle.availableData)
+                self.callback(data)
             }
         }
     }
